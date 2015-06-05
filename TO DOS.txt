@@ -1,0 +1,7 @@
+TO DOS
+
+- Câmera de FPS usando o PointerLock certinho.
+- Colisão entre tiro e modelo com diversos vértices. (atualmente a colisão é comparada com o primeiro vertice do modelo, o que funciona para um quadrado e não funciona para um humanoide)
+- Trocar tiro por um Soco *SUCKER PUNCHER* (necessida do model do punho)
+- Deixar a HUD melhorzinha.
+- Colocar a arma (PUNHO) sempre na frente da câmera.

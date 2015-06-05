@@ -6,7 +6,6 @@ Controles: ASWD para andar, Mouse para câmera e clique esquerdo para soco.
 
 
 
-
 Fontes:
 
 Base do FPS:
