@@ -8,13 +8,13 @@
 var map = [ // 1  2  3  4  5  6  7  8  9
            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,], // 0
            [1, 1, 0, 0, 0, 0, 0, 1, 1, 1,], // 1
-           [1, 1, 0, 0, 2, 0, 0, 0, 0, 1,], // 2
-           [1, 0, 0, 0, 0, 2, 0, 0, 0, 1,], // 3
-           [1, 0, 0, 2, 0, 0, 2, 0, 0, 1,], // 4
-           [1, 0, 0, 0, 2, 0, 0, 0, 1, 1,], // 5
+           [1, 1, 0, 0, 1, 0, 0, 0, 0, 1,], // 2
+           [1, 0, 0, 0, 0, 1, 0, 0, 0, 1,], // 3
+           [1, 0, 0, 1, 0, 0, 1, 0, 0, 1,], // 4
+           [1, 0, 0, 0, 1, 0, 0, 0, 1, 1,], // 5
            [1, 1, 1, 0, 0, 0, 0, 1, 1, 1,], // 6
            [1, 1, 1, 0, 0, 1, 0, 0, 1, 1,], // 7
-           [1, 1, 1, 1, 3, 1, 0, 0, 1, 1,], // 8
+           [1, 1, 1, 1, 1, 1, 0, 0, 1, 1,], // 8
            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1,], // 9
            ], mapW = map.length, mapH = map[0].length;
 
@@ -54,8 +54,6 @@ $(document).ready(function() {
 	
 // Setup
 function init() {
-	
-	
 	clock = new t.Clock(); // Used in render() for controls.update()
 	projector = new t.Projector(); // Used in bullet projection
 	scene = new t.Scene(); // Holds all objects in the canvas
@@ -84,16 +82,19 @@ function init() {
 	renderer.setSize(WIDTH, HEIGHT);
 	
 	// Add the canvas to the document
-	renderer.domElement.style.backgroundColor = '#D6F1FF'; // easier to see
+	renderer.domElement.style.backgroundColor = '#770011'; // easier to see. Cor do céu!
 	document.body.appendChild(renderer.domElement);
 	
 	// Track mouse position so we know where to shoot
 	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 	
 	// Shoot on click
-	$(document).click(function(e) {
+	var lastPlayerShot = Date.now(); // Para calcular espera entre tiros
+	
+	$(document).mousedown(function(e) {
 		e.preventDefault;
-		if (e.which === 1) { // Left click only
+		if (e.which === 1 && Date.now() > lastPlayerShot + 200) { // Left click only
+			lastPlayerShot = Date.now();
 			createBullet();
 		}
 	});
@@ -288,9 +289,9 @@ function setupScene() {
 	// Geometry: walls
 	var cube = new t.CubeGeometry(UNITSIZE, WALLHEIGHT, UNITSIZE);
 	var materials = [
-	                 new t.MeshLambertMaterial({/*color: 0x00CCAA,*/map: t.ImageUtils.loadTexture('assets/wall-1.jpg')}),
+	                 new t.MeshLambertMaterial({/*color: 0x00CCAA,*/map: t.ImageUtils.loadTexture('assets/wall-3.jpg')}),
 	                 new t.MeshLambertMaterial({/*color: 0xC5EDA0,*/map: t.ImageUtils.loadTexture('assets/wall-2.jpg')}),
-					 new t.MeshLambertMaterial({/*color: 0xC5EDA0,*/map: t.ImageUtils.loadTexture('assets/wall-3.jpg')}),
+					 new t.MeshLambertMaterial({/*color: 0xC5EDA0,*/map: t.ImageUtils.loadTexture('assets/wall-1.jpg')}),
 	                 new t.MeshLambertMaterial({color: 0xFBEBCD}),
 	                 ];
 	for (var i = 0; i < mapW; i++) {
@@ -472,12 +473,19 @@ var bullets = [];
 var sphereMaterial = new t.MeshBasicMaterial({color: 0x333333});
 var sphereGeo = new t.SphereGeometry(2, 6, 6);
 function createBullet(obj) {
+	
+	var sphere = new t.Mesh(sphereGeo, sphereMaterial);
+	
 	//Se createBullet foi chamado sem referencia à um objeto, criador é o player.
+	// Se o criador é o player, o tiro começa na altura da camera. Se inimigo, começa bem mais acima (culpa do model!)
 	if (obj === undefined) {
 		obj = cam;
+		sphere.position.set(obj.position.x, obj.position.y * 0.9, obj.position.z);
+	}else{
+		sphere.position.set(obj.position.x, obj.position.y * 10.0, obj.position.z);
 	}
-	var sphere = new t.Mesh(sphereGeo, sphereMaterial);
-	sphere.position.set(obj.position.x, obj.position.y * 0.8, obj.position.z);
+	
+	
 
 	if (obj instanceof t.Camera) {
 		var vector = new t.Vector3(mouse.x, mouse.y, 1);
