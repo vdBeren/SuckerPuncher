@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>WebGL FPS - AngelHack SV 2012 - Isaac Sukin</title>
+  <title>SUCKER PUNCHER - TRIP TO HELL</title>
   <style>
     body {
-      background-image: url('assets/Wolf.jpg');
+      background-image: url('assets/floor-1.jpg');
       cursor: crosshair;
       font-family: Georgia, Helvetica, sans-serif;
       font-weight: bold;
@@ -19,7 +19,9 @@
       user-select: none;
     }
     #hud {
-      bottom: 10px;
+	  font-size: 20px;
+	  background-color: #AAAAAA;
+      bottom: 50px;
       position: absolute;
       right: 10px;
       z-index: 100;
@@ -53,7 +55,18 @@
       cursor: pointer;
       font-size: 32px;
       opacity: 0.7;
-      padding: 120px;
+      padding: 32px;
+      text-align: center;
+      z-index: 1001;
+    }
+	
+	#intro-history {
+      background-color: #000000;
+      color: #FFFFFF;
+      cursor: pointer;
+      font-size: 24px;
+      opacity: 0.7;
+      padding: 48px;
       text-align: center;
       z-index: 1001;
     }
@@ -68,11 +81,10 @@
       z-index: 1002;
     }
   </style>
+  <audio id="music" src="assets/music.mp3" preload="auto" type="audio/mpeg"></audio>
   <script src="jquery-1.7.2.min.js"></script>
   <!-- <script src="PointerLock.js"></script> --> <!-- Insufficient browser support, interferes with other mouse events -->
-  <!-- <script src="Pathfinder.js"></script> -->
   <script src="Three.js"></script>
-  <!-- <script src="ColladaLoader.js"></script> -->
   <script src="Three.FirstPersonControls.js"></script>
   <script src="main.js"></script>
 </head>
