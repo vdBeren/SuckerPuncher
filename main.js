@@ -11,7 +11,7 @@ var map = [ // 1  2  3  4  5  6  7  8  9
            [1, 1, 0, 0, 1, 0, 0, 0, 0, 1,], // 2
            [1, 0, 0, 0, 0, 1, 0, 0, 0, 1,], // 3
            [1, 0, 0, 1, 0, 0, 1, 0, 0, 1,], // 4
-           [1, 0, 0, 0, 1, 0, 0, 0, 1, 1,], // 5
+           [1, 0, 0, 0, 0, 0, 0, 0, 1, 1,], // 5
            [1, 1, 1, 0, 1, 0, 0, 1, 1, 1,], // 6
            [1, 1, 0, 0, 0, 1, 0, 0, 1, 1,], // 7
            [1, 1, 0, 0, 0, 0, 0, 0, 1, 1,], // 8
@@ -28,16 +28,16 @@ var WIDTH = window.innerWidth,
 	MOVESPEED = 100,
 	LOOKSPEED = 0.075,
 	BULLETMOVESPEED = MOVESPEED * 5,
-	NUMAI = 5,
+	NUMAI = 8,
 	PROJECTILEDAMAGE = 25;
 // Global vars
 var t = THREE, scene, cam, renderer, controls, clock, projector, model, skin;
 var runAnim = true, mouse = { x: 0, y: 0 }, kills = 0, health = 100, multiplier = 1, score = 0;
 var monsterHealth = 100, monsterType = 0;
 var healthCube, lastHealthPickup = 0;
+var weapon;
 
 var loader = new t.JSONLoader(); // Inicia o utilitario para load de Models JSON
-
 
 // Initialize and run on document ready
 $(document).ready(function() {
@@ -48,7 +48,7 @@ $(document).ready(function() {
 		$(this).fadeOut();
 		$('#intro-history').fadeOut();
 		init();
-		setInterval(drawRadar, 1000);
+		setInterval(drawRadar, 500);
 		animate();
 	});
 	
@@ -61,7 +61,7 @@ function init() {
 	clock = new t.Clock(); // Used in render() for controls.update()
 	projector = new t.Projector(); // Used in bullet projection
 	scene = new t.Scene(); // Holds all objects in the canvas
-	scene.fog = new t.FogExp2(0x770011, 0.0020); // color, density
+	scene.fog = new t.FogExp2(0x770011, 0.0030); // color, density
 	
 	//TOCA A MUSICA! \o\ \o/ /o/
 	document.getElementById('music').play();
@@ -79,6 +79,9 @@ function init() {
 	controls.lookVertical = false; // Temporary solution; play on flat surfaces only
 	controls.noFly = true;
 
+	//CRIA A ARMA
+	setupWeapon();
+	
 	// World objects
 	setupScene();
 	
@@ -109,7 +112,7 @@ function init() {
 	
 	// Display HUD
 	$('body').append('<canvas id="radar" width="200" height="200"></canvas>');
-	$('body').append('<div id="hud"><p>HEALTH: <span id="health">100</span><br />SCORE: <span id="score">0</span><br /><span id="multiplier">1</span>X</p></div>');
+	$('body').append('<div id="hud"><p>HP: <span id="health">100</span><br />SCORE: <span id="score">0</span><br /><span id="multiplier">1</span>X</p></div>');
 	
 	// Set up "hurt" flash
 	$('body').append('<div id="hurt"></div>');
@@ -170,12 +173,14 @@ function bulletsUpdate(speed){
 					bullets.splice(i, 1);
 					scene.remove(b);
 					a.monsterHealth -= PROJECTILEDAMAGE;
+					/*
 					var color = a.material.color, percent = a.monsterHealth / 100;
 					a.material.color.setRGB(
 							percent * color.r,
 							percent * color.g,
 							percent * color.b
 					);
+					*/
 					hit = true;
 					break;
 				}
@@ -219,6 +224,7 @@ function enemiesUpdate(aispeed){
 			
 			$('#score').html(score);
 			$('#multiplier').html(multiplier);
+			
 			addAI();
 		}
 		// Move AI
@@ -243,7 +249,7 @@ function enemiesUpdate(aispeed){
 		}
 
 		var cc = getMapSector(cam.position); //Posição relativa ao player
-		if (Date.now() > a.lastShot + 1000 && distance(c.x, c.z, cc.x, cc.z) < 2) {
+		if (Date.now() > a.lastShot + 850 && distance(c.x, c.z, cc.x, cc.z) < 2) {
 			createBullet(a);
 			a.lastShot = Date.now();
 		}
@@ -263,6 +269,19 @@ function playerDeathUpdate(){
 	}
 }
 
+function weaponUpdate(){
+	
+		
+	weapon.position.set(cam.position.x+10, cam.position.y * 0.7, cam.position.z);
+	//weapon.rotation = cam.rotation;
+	
+	weapon.rotation.y = cam.rotation.y;
+	weapon.rotation.x = cam.rotation.x;
+	weapon.rotation.z = cam.rotation.z;
+	
+	
+}
+
 // Update and display
 function render() {
 	var delta = clock.getDelta(), speed = delta * BULLETMOVESPEED;
@@ -277,6 +296,9 @@ function render() {
 	
 	//Chama o update dos inimigos
 	enemiesUpdate(aispeed);
+	
+	//Chama o update da arma
+	weaponUpdate();
 	
 	renderer.render(scene, cam); // Repaint
 	
@@ -333,8 +355,34 @@ function setupScene() {
 	scene.add( directionalLight2 );
 }
 
-var ai = [];
+function setupWeapon(){
+	var weaponNameURL = 'assets/Weapons/w_shotgun'; // Sorteia um monstro!	
+	
+	// Cria o model da arma
+	loader.load(weaponNameURL + '.js', function (geometry) {
 
+		  // Cria o material da arma.
+		  var material = new t.MeshLambertMaterial({
+			map: t.ImageUtils.loadTexture(weaponNameURL + '.png'),  // carrega a textura da arma
+		  });
+
+		  // create a mesh with models geometry and material
+		  weapon = new t.Mesh(
+			geometry,
+			material
+		  );
+
+		//weapon.position.set(-cam.position.x, cam.position.y * 0.7, cam.position.z);
+		//weapon.rotation = cam.rotation;
+		
+		scene.add(weapon);
+
+	});
+}
+
+
+//VETOR DE INIMIGOS!
+var ai = [];
 function setupAI() {
 	for (var i = 0; i < NUMAI; i++) {
 		addAI();
@@ -377,7 +425,6 @@ function addAI() {
 		  // Cria o material do monstro.
 		  var material = new t.MeshLambertMaterial({
 			map: t.ImageUtils.loadTexture(monsterNameURL + '.jpg'),  // carrega a textura do monstro
-			
 		  });
 	  
 		  // create a mesh with models geometry and material
@@ -397,7 +444,7 @@ function addAI() {
 		if (monsterType == 0) o.monsterHealth = 100;
 		else if (monsterType == 1) o.monsterHealth = 200;
 		else if (monsterType == 2) o.monsterHealth = 400;
-		else if (monsterType == 3) o.monsterHealth = 500;
+		else if (monsterType == 3) o.monsterHealth = 600;
 		
 		o.pathPos = 1;
 		o.lastRandomX = Math.random();
@@ -470,6 +517,9 @@ function checkWallCollision(v) {
 function drawRadar() {
 	var c = getMapSector(cam.position), context = document.getElementById('radar').getContext('2d');
 	context.font = '10px Helvetica';
+	
+	var rSize = 20, tSize = 12, tSize2 = 8; // 20, 12, 8
+	
 	for (var i = 0; i < mapW; i++) {
 		for (var j = 0, m = map[i].length; j < m; j++) {
 			var d = 0;
@@ -481,27 +531,27 @@ function drawRadar() {
 			}
 			if (i == c.x && j == c.z && d == 0) {
 				context.fillStyle = '#0000FF';
-				context.fillRect(i * 20, j * 20, (i+1)*20, (j+1)*20);
+				context.fillRect(i * rSize, j * rSize, (i+1)*rSize, (j+1)*rSize);
 			}
 			else if (i == c.x && j == c.z) {
 				context.fillStyle = '#AA33FF';
-				context.fillRect(i * 20, j * 20, (i+1)*20, (j+1)*20);
+				context.fillRect(i * rSize, j * rSize, (i+1)*rSize, (j+1)*rSize);
 				context.fillStyle = '#000000';
-				context.fillText(''+d, i*20+8, j*20+12);
+				context.fillText(''+d, i*rSize+tSize2, j*rSize+tSize);
 			}
 			else if (d > 0 && d < 10) {
 				context.fillStyle = '#FF0000';
-				context.fillRect(i * 20, j * 20, (i+1)*20, (j+1)*20);
+				context.fillRect(i * rSize, j * rSize, (i+1)*rSize, (j+1)*rSize);
 				context.fillStyle = '#000000';
-				context.fillText(''+d, i*20+8, j*20+12);
+				context.fillText(''+d, i*rSize+tSize2, j*rSize+tSize);
 			}
 			else if (map[i][j] > 0) {
 				context.fillStyle = '#666666';
-				context.fillRect(i * 20, j * 20, (i+1)*20, (j+1)*20);
+				context.fillRect(i * rSize, j * rSize, (i+1)*rSize, (j+1)*rSize);
 			}
 			else {
 				context.fillStyle = '#CCCCCC';
-				context.fillRect(i * 20, j * 20, (i+1)*20, (j+1)*20);
+				context.fillRect(i * rSize, j * rSize, (i+1)*rSize, (j+1)*rSize);
 			}
 		}
 	}
@@ -516,7 +566,7 @@ function createBullet(obj) {
 	// Se o criador é o player, o tiro começa na altura da camera E GIGANTE. Se inimigo, começa bem mais acima (culpa do model!)
 	
 	if (obj === undefined) {
-		var sphereGeo = new t.CubeGeometry(24, 32, 32);
+		var sphereGeo = new t.CubeGeometry(16, 32, 32);
 		var sphere = new t.Mesh(sphereGeo, punchMaterial);
 		obj = cam;
 		sphere.position.set(obj.position.x, obj.position.y * 0.7, obj.position.z);
