@@ -25,15 +25,15 @@ var WIDTH = window.innerWidth,
 	ASPECT = WIDTH / HEIGHT,
 	UNITSIZE = 250,
 	WALLHEIGHT = UNITSIZE / 3,
-	MOVESPEED = 100,
+	MOVESPEED = 70,
 	LOOKSPEED = 0.075,
-	BULLETMOVESPEED = MOVESPEED * 5,
-	NUMAI = 8,
+	BULLETMOVESPEED = MOVESPEED * 6,
+	NUMAI = 7,
 	PROJECTILEDAMAGE = 25;
 // Global vars
 var t = THREE, scene, cam, renderer, controls, clock, projector, model, skin;
 var runAnim = true, mouse = { x: 0, y: 0 }, kills = 0, health = 100, multiplier = 1, score = 0;
-var monsterHealth = 100, monsterType = 0;
+var monsterHealth = 100, monsterType = 0, monsterSpeed = 10;
 var healthCube, lastHealthPickup = 0;
 var weapon;
 
@@ -42,7 +42,7 @@ var loader = new t.JSONLoader(); // Inicia o utilitario para load de Models JSON
 // Initialize and run on document ready
 $(document).ready(function() {
 	$('body').append('<div id="intro-history">SUCKER PUNCHER went to hell by mistake. Now guess who is getting punched?</div>');
-	$('body').append('<div id="intro">GO PUNCH SOME DEMONS<br>[PUNCH with CLICK]<br>[MOVE wih AWSD]</div>');
+	$('body').append('<div id="intro">GO PUNCH SOME DEMONS<br /><br />[PUNCH with CLICK]<br />[MOVE wih AWSD]</div>');
 	$('#intro').css({width: WIDTH, height: HEIGHT}).one('click', function(e) {
 		e.preventDefault();
 		$(this).fadeOut();
@@ -74,7 +74,7 @@ function init() {
 	
 	// Camera moves with mouse, flies around with WASD/arrow keys
 	controls = new t.FirstPersonControls(cam);
-	controls.movementSpeed = MOVESPEED;
+	controls.movementSpeed = MOVESPEED + 35;
 	controls.lookSpeed = LOOKSPEED;
 	controls.lookVertical = false; // Temporary solution; play on flat surfaces only
 	controls.noFly = true;
@@ -209,7 +209,7 @@ function bulletsUpdate(speed){
 	}
 }
 
-function enemiesUpdate(aispeed){
+function enemiesUpdate(delta){
 	// Update AI.
 	for (var i = ai.length-1; i >= 0; i--) {
 		var a = ai[i];
@@ -228,6 +228,7 @@ function enemiesUpdate(aispeed){
 			addAI();
 		}
 		// Move AI
+		var aispeed = delta * (MOVESPEED + a.monsterSpeed); // VELOCIDADE DO MONSTRO
 		var r = Math.random();
 		if (r > 0.995) {
 			a.lastRandomX = Math.random() * 2 - 1;
@@ -237,8 +238,8 @@ function enemiesUpdate(aispeed){
 		a.translateZ(aispeed * a.lastRandomZ);
 		var c = getMapSector(a.position);
 		if (c.x < 0 || c.x >= mapW || c.y < 0 || c.y >= mapH || checkWallCollision(a.position)) {
-			a.translateX(-2 * aispeed * a.lastRandomX);
-			a.translateZ(-2 * aispeed * a.lastRandomZ);
+			a.translateX(-1 * aispeed * a.lastRandomX);
+			a.translateZ(-1 * aispeed * a.lastRandomZ);
 			a.lastRandomX = Math.random() * 2 - 1;
 			a.lastRandomZ = Math.random() * 2 - 1;
 		}
@@ -262,7 +263,9 @@ function playerDeathUpdate(){
 		$(renderer.domElement).fadeOut();
 		$('#radar, #hud').fadeOut();
 		$('#intro').fadeIn();
-		$('#intro').html('STOP BEING DUMB! PUNCH THE DEMONS!<br>[CLICK TO CONTINUE]');
+		
+		$('#score').html(score);
+		$('#intro').html('STOP BEING DUMB! PUNCH THE DEMONS!<br /> YOUR SCORE WAS<div id="intro"><span id="score"></span></div> <br /><br />[CLICK TO CONTINUE]');
 		$('#intro').one('click', function() {
 			location = location;
 		});
@@ -272,7 +275,9 @@ function playerDeathUpdate(){
 function weaponUpdate(){
 	
 		
-	weapon.position.set(cam.position.x+10, cam.position.y * 0.7, cam.position.z);
+	// POSICIONA E ROTACIONA ARMA PERTO DA CAMERA!
+	
+	weapon.position.set(cam.position.x+5, cam.position.y * 0.7, cam.position.z);
 	//weapon.rotation = cam.rotation;
 	
 	weapon.rotation.y = cam.rotation.y;
@@ -285,7 +290,7 @@ function weaponUpdate(){
 // Update and display
 function render() {
 	var delta = clock.getDelta(), speed = delta * BULLETMOVESPEED;
-	var aispeed = delta * MOVESPEED;
+	
 	controls.update(delta); // Move camera
 	
 	//Chama o update do Cubo de Vida
@@ -295,7 +300,7 @@ function render() {
 	bulletsUpdate(speed);
 	
 	//Chama o update dos inimigos
-	enemiesUpdate(aispeed);
+	enemiesUpdate(delta);
 	
 	//Chama o update da arma
 	weaponUpdate();
@@ -396,20 +401,16 @@ function sortEnemy(){
 
 	switch(enemy){
 		case 0:
-			name = path + 'Demon';
-			monsterType = 0;
+			name = path + 'Archvile';
 			break;
 		case 1:
-			name = path + 'Archvile';
-			monsterType = 1;
+			name = path + 'Demon';
 			break;
 		case 2:
 			name = path + 'Fatso';
-			monsterType = 2;
 			break;
 		case 3:
 			name = path + 'Baron';
-			monsterType = 3;
 			break;
 	}
 	
@@ -432,7 +433,9 @@ function addAI() {
 			geometry,
 			material
 		  );
-			
+		
+
+		
 		do {
 			var x = getRandBetween(0, mapW-1);
 			var z = getRandBetween(0, mapH-1);
@@ -441,10 +444,29 @@ function addAI() {
 		x = Math.floor(x - mapW/2) * UNITSIZE;
 		z = Math.floor(z - mapW/2) * UNITSIZE;
 		o.position.set(x, UNITSIZE * 0.015, z);
-		if (monsterType == 0) o.monsterHealth = 100;
-		else if (monsterType == 1) o.monsterHealth = 200;
-		else if (monsterType == 2) o.monsterHealth = 400;
-		else if (monsterType == 3) o.monsterHealth = 600;
+		
+		//DEFINE OS ATRIBUTOS DOS INIMIGOS (está assim por praticidade, javascript é bem chato pra jogos >_>)
+		if(monsterNameURL == 'assets/Enemies/Archvile'){
+			o.monsterType = 0;
+			o.monsterHealth = 100;
+			o.monsterSpeed = 300;
+		} 
+		else if(monsterNameURL == 'assets/Enemies/Demon'){
+			o.monsterType = 1;
+			o.monsterHealth = 200;
+			o.monsterSpeed = 50;
+		} 
+		else if(monsterNameURL == 'assets/Enemies/Fatso') {
+			o.monsterType = 2;
+			o.monsterHealth = 400;
+			o.monsterSpeed = 25;
+		} 
+		else if(monsterNameURL == 'assets/Enemies/Baron') {
+			o.monsterType = 3;
+			o.monsterHealth = 600;
+			o.monsterSpeed = 10;
+		}
+	
 		
 		o.pathPos = 1;
 		o.lastRandomX = Math.random();
